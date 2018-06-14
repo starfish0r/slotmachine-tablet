@@ -1,0 +1,9 @@
+<resources>
+    <string name="app_name">Slotmachine-tablet2</string>
+    <string name="action_settings">Settings</string>
+
+    <string name="fullscreen">hide buttons</string>
+    <string name="run_numbers">run numbers</string>
+    <string name="connect_bluetooth">connect bt</string>
+    <string name="status">status</string>
+</resources>
