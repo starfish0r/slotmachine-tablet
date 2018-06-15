@@ -26,7 +26,7 @@ public class MainActivity extends AppCompatActivity {
      * the MAC adress of the bluetooth target.
      * Valid Bluetooth hardware addresses must be upper case, in a format such as "00:11:22:33:AA:BB"
      */
-    private static final String TARGET_MAC = "";
+    private static final String TARGET_MAC = "00:16:53:0F:30:F1";//"00:11:22:33:AA:BB";
 
     private boolean mButtonsVisible = true;
     private List<View> lstButtons = null;
@@ -93,6 +93,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        btconn.start();
     }
 
     private void startTheGame() {
