@@ -84,6 +84,7 @@ public class MainActivity extends AppCompatActivity {
         btconn = new BTConnection(this, TARGET_MAC, new SlotMachinePacketCallback(){
             @Override
             public void accept(SlotMachinePacket p) {
+                Log.i(TAG, "accept "+p.msgType);
                 if (p.msgType==SlotMachinePacket.MsgType.HEARTBEAT.ordinal()){
                     callbackHandler.post(()->statusHeartbeat());
                 }
