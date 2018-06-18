@@ -73,8 +73,11 @@ public class BTConnection extends Thread {
                 }
                 if (btSocket == null || !btSocket.isConnected()) {
                     Log.i(TAG, "connecting with UUID "+SOCKET_UUID);
-                    //btSocket = remoteDevice.createInsecureRfcommSocketToServiceRecord(SOCKET_UUID);
                     btSocket = remoteDevice.createRfcommSocketToServiceRecord(SOCKET_UUID);
+
+
+                    //btSocket = remoteDevice.createInsecureRfcommSocketToServiceRecord(SOCKET_UUID);
+
                     //btSocket = (BluetoothSocket) remoteDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(remoteDevice,1);
 
                     //Constructor<BluetoothSocket> constructor = BluetoothSocket.class.getDeclaredConstructor(new Class[]{int.class, int.class, boolean.class, boolean.class, BluetoothDevice.class, int.class, ParcelUuid.class});
@@ -92,7 +95,11 @@ public class BTConnection extends Thread {
                     if(i == -1){
                         return;
                     }
-                    SlotMachinePacket p = new SlotMachinePacket(SlotMachinePacket.MsgType.valueFromOrdinal(i));
+                    SlotMachinePacket.MsgType msgType = SlotMachinePacket.MsgType.valueFromOrdinal(i);
+                    if(msgType == SlotMachinePacket.MsgType.HEARTBEAT){
+                        outputStream.write(SlotMachinePacket.MsgType.HEARTBEAT.ordinal());
+                    }
+                    SlotMachinePacket p = new SlotMachinePacket(msgType);
                     Log.i(TAG, "object received: "+p);
                     callback.accept(p);
                 }

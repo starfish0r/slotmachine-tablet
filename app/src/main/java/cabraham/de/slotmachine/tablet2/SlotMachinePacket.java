@@ -2,7 +2,7 @@ package cabraham.de.slotmachine.tablet2;
 
 import java.io.Serializable;
 
-class SlotMachinePacket implements Serializable {
+class SlotMachinePacket {
     SlotMachinePacket(MsgType msg){
         msgType = msg.ordinal();
     }
