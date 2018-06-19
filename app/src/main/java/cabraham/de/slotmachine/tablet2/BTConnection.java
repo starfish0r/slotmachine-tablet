@@ -57,7 +57,7 @@ public class BTConnection extends Thread {
             return;
         }
 
-        while(true) {
+        //while(true) {
             Log.i(TAG, "running loop");
             try {
                 //remoteDevice.setPin("1234".getBytes());
@@ -72,7 +72,7 @@ public class BTConnection extends Thread {
                     return;
                 }
                 if (btSocket == null || !btSocket.isConnected()) {
-                    Log.i(TAG, "connecting with UUID "+SOCKET_UUID);
+                    //Log.i(TAG, "connecting with UUID "+SOCKET_UUID);
                     btSocket = remoteDevice.createRfcommSocketToServiceRecord(SOCKET_UUID);
 
 
@@ -96,17 +96,19 @@ public class BTConnection extends Thread {
                         return;
                     }
                     SlotMachinePacket.MsgType msgType = SlotMachinePacket.MsgType.valueFromOrdinal(i);
+                    Log.i(TAG, "object received: "+msgType);
                     if(msgType == SlotMachinePacket.MsgType.HEARTBEAT){
+                        Log.i(TAG, "sending heartbeat reply");
                         outputStream.write(SlotMachinePacket.MsgType.HEARTBEAT.ordinal());
+                        outputStream.flush();
                     }
                     SlotMachinePacket p = new SlotMachinePacket(msgType);
-                    Log.i(TAG, "object received: "+p);
                     callback.accept(p);
                 }
             } catch (Exception e) {
                 Log.e(TAG, "run", e);
             }
-        }
+        //}
 
     }
 

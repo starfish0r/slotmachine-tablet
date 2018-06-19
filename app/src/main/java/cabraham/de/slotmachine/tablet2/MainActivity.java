@@ -69,15 +69,13 @@ public class MainActivity extends AppCompatActivity {
         btnSlot1.setOnClickListener((view)->toggle());
 
         findViewById(R.id.btnRunNumbers).setOnClickListener((view)->startTheGame());
-        findViewById(R.id.btnConnectBT).setOnClickListener((view)-> startConnectBT());
+        findViewById(R.id.btnDoSchlonz).setOnClickListener((view)->triggerSchlonz());
+        findViewById(R.id.btnConnectBT).setOnClickListener((view)->startConnectBT());
 
         TextView slot1 = findViewById(R.id.slot1);
         TextView slot2 = findViewById(R.id.slot2);
         TextView slot3 = findViewById(R.id.slot3);
         slots = Arrays.asList(slot1, slot2, slot3);
-
-
-
     }
 
     private void startConnectBT() {
@@ -108,9 +106,13 @@ public class MainActivity extends AppCompatActivity {
         if(slots.get(0).getText().equals(slots.get(1).getText()) && slots.get(1).getText().equals(slots.get(2).getText())){
             TextView tvStatus = findViewById(R.id.tvStatus);
             tvStatus.setText("WIN");
-            if(btconn != null) {
-                btconn.send(new SlotMachinePacket(SlotMachinePacket.MsgType.GAMEWINNER));
-            }
+            triggerSchlonz();
+        }
+    }
+
+    private void triggerSchlonz() {
+        if(btconn != null) {
+            btconn.send(new SlotMachinePacket(SlotMachinePacket.MsgType.GAMEWINNER));
         }
     }
 

@@ -82,6 +82,12 @@
                 android:layout_weight="1"
                 android:text="@string/run_numbers" />
             <Button
+                android:id="@+id/btnDoSchlonz"
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/do_schlonz" />
+            <Button
                 android:id="@+id/btnConnectBT"
                 android:layout_width="0dp"
                 android:layout_height="wrap_content"
