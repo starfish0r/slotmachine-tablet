@@ -1,12 +1,13 @@
 package de.cabraham.slotmachine.nxj;
 
+import java.io.InputStream;
 import java.io.OutputStream;
 
-import de.cabraham.slotmachine.nxj.Main.SlotMachinePacket.MsgType;
-import de.cabraham.slotmachine.nxj.Main.SlotMachinePacket.MsgType;
-import de.cabraham.slotmachine.nxj.Main.SlotMachinePacket.MsgType;
 import lejos.nxt.Button;
+import lejos.nxt.ButtonListener;
 import lejos.nxt.LCD;
+import lejos.nxt.Motor;
+import lejos.nxt.MotorPort;
 import lejos.nxt.Sound;
 import lejos.nxt.comm.BTConnection;
 import lejos.nxt.comm.Bluetooth;
@@ -14,6 +15,8 @@ import lejos.nxt.comm.NXTConnection;
 import lejos.nxt.comm.RConsole;
 
 public class Main {
+    
+  static volatile boolean running = true;
   
   public static void main(String[] args) throws Exception {
     RConsole.openUSB(10000);
@@ -27,50 +30,56 @@ public class Main {
     //schlonz implementieren
     //http://www.lejos.org/nxt/nxj/tutorial/ListenersAndEvents/Listeners_Events.htm
 
+    Button.ESCAPE.addButtonListener(new ButtonListener() {
+        public void buttonReleased(Button b) {}
+        public void buttonPressed(Button b) {
+            running = false;
+            //System.exit(0);
+        }
+      });
 
     BTConnection conn = null;
     int cnt = 0;
     try {
       while(conn == null) {
-        LCD.drawString("waiting "+cnt, 0, 0);
+        SLCD.setBT("waiting "+cnt);
         conn = Bluetooth.waitForConnection(5000, NXTConnection.RAW);
-        LCD.drawString(String.valueOf(conn), 2, 2);
+        //LCD.drawString(String.valueOf(conn), 2, 2);
         cnt++;
       }
       Sound.beep();
 
       RConsole.println(conn.getAddress());
-      LCD.drawString("conn:+"conn.getAddress(), 0, 0);
-      LCD.refresh();
+      SLCD.setBT("conn:"+conn.getAddress());
 
       OutputStream openOutputStream = conn.openOutputStream();
 
       BTReadThread readThread = new BTReadThread(openOutputStream, conn.openInputStream());
       readThread.start();
 
-      while(true){
-        openOutputStream.write(SlotMachinePacket.MsgType.HEARTBEAT);
+      while(running){
+        openOutputStream.write(MsgType.HEARTBEAT.ordinal());
+        openOutputStream.flush();
         Thread.sleep(5000);
       }
 
-      openOutputStream.flush();
+      Sound.buzz();
       openOutputStream.close();
     } catch(Throwable ex){
-      LCD.drawString(ex.getMessage(), 0, 15);
+      SLCD.setException(ex.getMessage());
       //ex.printStackTrace();
       RConsole.println(ex.getMessage());
     }
 
     RConsole.close();
-    Sound.beep();
   }
 
-  public static doTheSchlonz(){
-    //do async
+  public static void doTheSchlonz(){
+    Motor.A.rotate(90, true);
   }
 
 
-  class BTReadThread extends Thread {
+  static class BTReadThread extends Thread {
     private OutputStream os;
     private InputStream is;
     public BTReadThread(OutputStream os, InputStream is) {
@@ -79,40 +88,54 @@ public class Main {
     }
 
     public void run() {
+      SLCD.setReadStatus("read ready");
       try {
+        int cntHeartbeat = 0;
         while (true) {
-          int cntHeartbeat = 0;
           int i = is.read();
+          SLCD.setReadStatus("rcv "+i);
           if (i == -1) {
+            SLCD.setReadStatus("read gave -1");
             RConsole.println("read gave -1");
             return;
           }
-          de.cabraham.slotmachine.nxj.Main.SlotMachinePacket.MsgType msgType = SlotMachinePacket.MsgType
-              .valueFromOrdinal(i);
+          MsgType msgType = MsgType.valueFromOrdinal(i);
+          SLCD.setReadStatus("rcv "+msgType);
           switch (msgType) {
-            case SlotMachinePacket.MsgType.HEARTBEAT:
+            case HEARTBEAT:
               //cool: heartbeat reply
-              LCD.drawString(cntHeartbeat++, 5, 0);
+              SLCD.setHeartbeat(""+cntHeartbeat);
+              cntHeartbeat++;
               break;
             case GAMEWINNER:
               Main.doTheSchlonz();
               break;
+            default:
+              break;
           }
         }
-      } catch (Exception ex){
+      } catch (Throwable ex){
+        SLCD.setException(ex.getMessage());
         RConsole.println(ex.getMessage());
       }
 
     }
   }
 
-  public static  class SlotMachinePacket {
+  public static class SlotMachinePacket {
     SlotMachinePacket(MsgType msg){
       msgType = msg.ordinal();
     }
     int msgType;
 
-    public enum MsgType {
+    //@Override
+    public String toString() {
+      MsgType msgType = MsgType.valueFromOrdinal(this.msgType);
+      return String.valueOf(msgType);
+    }
+  }
+  
+  public enum MsgType {
       HEARTBEAT,
       STARTGAMEPLZ,
       GAMEWINNER;
@@ -126,12 +149,41 @@ public class Main {
         return null;
       }
     }
+  
+  public static class SLCD {
 
-    @Override
-    public String toString() {
-      MsgType msgType = MsgType.valueFromOrdinal(this.msgType);
-      return String.valueOf(msgType);
+    private static String bt;
+    private static String read;
+    private static String hearbeat;
+    private static String exception;
+
+    public static void setBT(String string) {
+        bt = string;
+        draw();
     }
-  }
+    
+    public static void setException(String message) {
+        exception = message;
+    }
 
+    public static void setHeartbeat(String string) {
+        hearbeat = string;
+    }
+
+    public static void setReadStatus(String string) {
+        read = string;
+    }
+
+    public static void draw(){
+        LCD.clear();
+        LCD.drawString(bt, 0, 0);
+        LCD.drawString(read, 0, 2);
+        LCD.drawString(hearbeat, 0, 3);
+        LCD.drawString(exception, 0, 4);
+    }
+      
+      
+  }
 }
+
+
