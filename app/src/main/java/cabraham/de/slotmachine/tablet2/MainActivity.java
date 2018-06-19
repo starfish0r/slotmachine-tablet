@@ -154,6 +154,7 @@ public class MainActivity extends AppCompatActivity {
         lstButtons = new ArrayList<>(4);
         lstButtons.add(findViewById(R.id.btnMakeFullScreen));
         lstButtons.add(findViewById(R.id.btnRunNumbers));
+        lstButtons.add(findViewById(R.id.btnDoSchlonz));
         lstButtons.add(findViewById(R.id.btnConnectBT));
         lstButtons.add(findViewById(R.id.tvStatus));
     }
