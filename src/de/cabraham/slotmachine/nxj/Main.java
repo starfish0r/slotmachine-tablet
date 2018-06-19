@@ -8,9 +8,7 @@ import lejos.nxt.Button;
 import lejos.nxt.ButtonListener;
 import lejos.nxt.LCD;
 import lejos.nxt.Motor;
-import lejos.nxt.MotorPort;
 import lejos.nxt.SensorPort;
-import lejos.nxt.SensorPortListener;
 import lejos.nxt.Sound;
 import lejos.nxt.TouchSensor;
 import lejos.nxt.comm.BTConnection;
@@ -29,10 +27,7 @@ public class Main {
         RConsole.println("starting");
 
 
-        //BT kram auslagern
-        //sensor ansteuern
         //schlonz implementieren
-        //http://www.lejos.org/nxt/nxj/tutorial/ListenersAndEvents/Listeners_Events.htm
 
         final BTConnectionManager btm = new BTConnectionManager();
         btm.setup();
