@@ -8,6 +8,7 @@ import android.os.ParcelUuid;
 import android.util.Log;
 import android.widget.Toast;
 
+import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -57,59 +58,59 @@ public class BTConnection extends Thread {
             return;
         }
 
-        //while(true) {
-            Log.i(TAG, "running loop");
-            try {
-                //remoteDevice.setPin("1234".getBytes());
-                /*Log.i(TAG, "bond state "+remoteDevice.getBondState());
-                Log.i(TAG, "device name "+remoteDevice.getName());
-                Log.i(TAG, "UUIDs "+ Arrays.toString(remoteDevice.getUuids()));
-                Log.i(TAG, "class "+remoteDevice.getBluetoothClass());*/
-                if (remoteDevice.getBondState() == BluetoothDevice.BOND_NONE) {
-                    Log.i(TAG, "no bond");
-                    //Toast.makeText(context, "Please bond/pair the device manually", Toast.LENGTH_SHORT).show();
-                    //we rely on manual pairing
+        try {
+            //remoteDevice.setPin("1234".getBytes());
+            /*Log.i(TAG, "bond state "+remoteDevice.getBondState());
+            Log.i(TAG, "device name "+remoteDevice.getName());
+            Log.i(TAG, "UUIDs "+ Arrays.toString(remoteDevice.getUuids()));
+            Log.i(TAG, "class "+remoteDevice.getBluetoothClass());*/
+            if (remoteDevice.getBondState() == BluetoothDevice.BOND_NONE) {
+                Log.i(TAG, "no bond");
+                //Toast.makeText(context, "Please bond/pair the device manually", Toast.LENGTH_SHORT).show();
+                //we rely on manual pairing
+                return;
+            }
+            if (btSocket == null || !btSocket.isConnected()) {
+                Log.i(TAG, "connecting");
+                btSocket = remoteDevice.createRfcommSocketToServiceRecord(SOCKET_UUID);
+
+                //the other desperate approaches:
+                //btSocket = remoteDevice.createInsecureRfcommSocketToServiceRecord(SOCKET_UUID);
+                //btSocket = (BluetoothSocket) remoteDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(remoteDevice,1);
+                //Constructor<BluetoothSocket> constructor = BluetoothSocket.class.getDeclaredConstructor(new Class[]{int.class, int.class, boolean.class, boolean.class, BluetoothDevice.class, int.class, ParcelUuid.class});
+                //constructor.setAccessible(true);
+                //btSocket = constructor.newInstance(BluetoothSocket.TYPE_RFCOMM, -1, true, true, remoteDevice, -1, new ParcelUuid(SOCKET_UUID));
+
+                btSocket.connect();
+                Log.i(TAG, "connected");
+            }
+            InputStream o = btSocket.getInputStream();
+            this.outputStream = btSocket.getOutputStream();
+            while(true) {
+                Log.i(TAG, "reading object...");
+                int i = o.read();
+                if(i == -1){
                     return;
                 }
-                if (btSocket == null || !btSocket.isConnected()) {
-                    //Log.i(TAG, "connecting with UUID "+SOCKET_UUID);
-                    btSocket = remoteDevice.createRfcommSocketToServiceRecord(SOCKET_UUID);
-
-
-                    //btSocket = remoteDevice.createInsecureRfcommSocketToServiceRecord(SOCKET_UUID);
-
-                    //btSocket = (BluetoothSocket) remoteDevice.getClass().getMethod("createRfcommSocket", new Class[] {int.class}).invoke(remoteDevice,1);
-
-                    //Constructor<BluetoothSocket> constructor = BluetoothSocket.class.getDeclaredConstructor(new Class[]{int.class, int.class, boolean.class, boolean.class, BluetoothDevice.class, int.class, ParcelUuid.class});
-                    //constructor.setAccessible(true);
-                    //btSocket = constructor.newInstance(BluetoothSocket.TYPE_RFCOMM, -1, true, true, remoteDevice, -1, new ParcelUuid(SOCKET_UUID));
-
-                    btSocket.connect();
-                    Log.i(TAG, "connected");
+                SlotMachinePacket.MsgType msgType = SlotMachinePacket.MsgType.valueFromOrdinal(i);
+                Log.i(TAG, "object received: "+msgType);
+                if(msgType == SlotMachinePacket.MsgType.HEARTBEAT){
+                    Log.i(TAG, "sending heartbeat reply");
+                    outputStream.write(SlotMachinePacket.MsgType.HEARTBEAT.ordinal());
+                    outputStream.flush();
                 }
-                InputStream o = btSocket.getInputStream();
-                this.outputStream = btSocket.getOutputStream();
-                while(true) {
-                    Log.i(TAG, "reading object...");
-                    int i = o.read();
-                    if(i == -1){
-                        return;
-                    }
-                    SlotMachinePacket.MsgType msgType = SlotMachinePacket.MsgType.valueFromOrdinal(i);
-                    Log.i(TAG, "object received: "+msgType);
-                    if(msgType == SlotMachinePacket.MsgType.HEARTBEAT){
-                        Log.i(TAG, "sending heartbeat reply");
-                        outputStream.write(SlotMachinePacket.MsgType.HEARTBEAT.ordinal());
-                        outputStream.flush();
-                    }
-                    SlotMachinePacket p = new SlotMachinePacket(msgType);
-                    callback.accept(p);
-                }
-            } catch (Exception e) {
-                Log.e(TAG, "run", e);
+                SlotMachinePacket p = new SlotMachinePacket(msgType);
+                callback.accept(p);
             }
-        //}
-
+        } catch (Exception e) {
+            Log.e(TAG, "run", e);
+        }
+        try {
+            outputStream.close();
+        } catch (IOException e) {}
+        try {
+            btSocket.close();
+        } catch (IOException e) {}
     }
 
     public void send(SlotMachinePacket p){

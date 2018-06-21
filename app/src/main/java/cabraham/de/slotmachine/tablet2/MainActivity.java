@@ -92,6 +92,7 @@ public class MainActivity extends AppCompatActivity {
                 }
             }
         });
+        cntHeartbeat = 0;
         btconn.start();
     }
 
