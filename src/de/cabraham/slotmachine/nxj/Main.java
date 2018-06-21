@@ -8,6 +8,7 @@ import lejos.nxt.Button;
 import lejos.nxt.ButtonListener;
 import lejos.nxt.LCD;
 import lejos.nxt.Motor;
+import lejos.nxt.NXTRegulatedMotor;
 import lejos.nxt.SensorPort;
 import lejos.nxt.Sound;
 import lejos.nxt.TouchSensor;
@@ -18,25 +19,59 @@ import lejos.nxt.comm.RConsole;
 
 public class Main {
 
+    private static final NXTRegulatedMotor MOTORPORT_SCHLONZ = Motor.A;
+    private static final SensorPort SENSORPORT_LEVER = SensorPort.S1;
+    private static final SensorPort SENSORPORT_RESET = SensorPort.S2;
+    
+    private static final int MOTOR_DEGREES = 70; 
+    private static final int MOTOR_SPEED = MOTOR_DEGREES / 2; 
+    
     static volatile boolean running = true;
+    static volatile boolean hardExit = true;
 
     public static void main(String[] args) throws Exception {
-        RConsole.openUSB(10000);
-        RConsole.println("press any button to start");
-        Button.waitForAnyPress();
+        RConsole.openUSB(5000);
+        //RConsole.println("press any button to start");
+        //Button.waitForAnyPress();
         RConsole.println("starting");
+        Sound.twoBeeps();
 
+        //button stuff for the hardware buttons
+        Button.LEFT.addButtonListener(new ButtonListener() {
+            public void buttonReleased(Button b) {}
+            public void buttonPressed(Button b) {
+                MOTORPORT_SCHLONZ.setSpeed(MOTOR_SPEED);
+                MOTORPORT_SCHLONZ.rotate(MOTOR_DEGREES);
+            }
+        });
+        Button.RIGHT.addButtonListener(new ButtonListener() {
+            public void buttonReleased(Button b) {}
+            public void buttonPressed(Button b) {
+                MOTORPORT_SCHLONZ.setSpeed(MOTOR_SPEED);
+                MOTORPORT_SCHLONZ.rotate(-MOTOR_DEGREES);
+            }
+        });
+        Button.ESCAPE.addButtonListener(new ButtonListener() {
+            public void buttonReleased(Button b) {}
+            public void buttonPressed(Button b) {
+                if(hardExit){
+                    System.exit(0);
+                } else {
+                    running = false;
+                }
+            }
+        });
 
-        //schlonz implementieren
-
+        //wait for a bluetooth client
         final BTConnectionManager btm = new BTConnectionManager();
+        //this blocks until something connects!
         btm.setup();
 
-        TouchSensor ts = new TouchSensor(SensorPort.S1);
-        TouchSensorListener tsl = new TouchSensorListener(ts, new ButtonListener() {
+        //setup touch sensor on S1 that waits for the lever to be pulled
+        TouchSensorListener tslLever = new TouchSensorListener(new TouchSensor(SENSORPORT_LEVER),
+                                                               new ButtonListener() {
             long lasttouch;
-            public void buttonReleased(Button b) {
-            }
+            public void buttonReleased(Button b) {}
             public void buttonPressed(Button b) {
                 long now = System.currentTimeMillis();
                 if(now - lasttouch > 5000) {
@@ -46,19 +81,28 @@ public class Main {
                 }
             }
         });
-        tsl.setDaemon(true);
-        tsl.start();
-
-        Button.ESCAPE.addButtonListener(new ButtonListener() {
+        tslLever.setDaemon(true);
+        tslLever.start();
+        
+        //setup touch sensor on S2 which makes the Schlonz-klappe float so I can reset it manually
+        //3 seconds time
+        TouchSensorListener tslReset = new TouchSensorListener(new TouchSensor(SENSORPORT_RESET),
+                                                               new ButtonListener() {
             public void buttonReleased(Button b) {}
             public void buttonPressed(Button b) {
-                running = false;
+                MOTORPORT_SCHLONZ.flt(true);
+                doSleep(3000L);
+                MOTORPORT_SCHLONZ.stop();
             }
         });
-
+        tslReset.setDaemon(true);
+        tslReset.start();
+        
+        //modifies the button handler of button ESCAPE to set running=false instead of System.exit
+        hardExit = false;
         while(running){
             btm.sendHeartbeat();
-            Thread.sleep(5000);
+            doSleep(5000);
         }
         
         btm.shutdown();
@@ -69,7 +113,8 @@ public class Main {
     }
 
     public static void doTheSchlonz(){
-        Motor.A.rotate(360, true);
+        MOTORPORT_SCHLONZ.setSpeed(MOTOR_SPEED);
+        MOTORPORT_SCHLONZ.rotate(MOTOR_DEGREES);
     }
 
     static class BTConnectionManager {
@@ -257,11 +302,19 @@ public class Main {
                         bl.buttonReleased(null);
                     }
                 }
-                try {
-                    Thread.sleep(20);
-                } catch (InterruptedException e) {}
+                doSleep(20L);
             }
         }
+    }
+    
+    /**
+     * sleep without try/catch
+     * @param dur
+     */
+    static void doSleep(long dur){
+        try {
+            Thread.sleep(dur);
+        } catch (InterruptedException e) {}
     }
 }
 
