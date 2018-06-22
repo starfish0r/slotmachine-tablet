@@ -40,7 +40,7 @@ public class MainActivity extends AppCompatActivity {
 
     private List<TextView> slots = null;
 
-    private static final List<String> GAMECHARS = Arrays.asList("1", "2", "3", "4");
+    private static final List<String> GAMECHARS = Arrays.asList("1", "2", "3");//, "4");
     private static final Long SPINTIME_SLOT1_MS = 5000L;
     private static final Long SPINTIME_SLOT2_MS = 7000L;
     private static final Long SPINTIME_SLOT3_MS = 10000L;
